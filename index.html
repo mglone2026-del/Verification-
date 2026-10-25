@@ -3,7 +3,7 @@
 <html lang="mr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>महिला लोन ऑनलाइन व्हेरिफिकेशन 2026</title>
 
 <style>
@@ -15,7 +15,10 @@
   --green:#16834a;
   --red:#bd3030;
 }
-* { box-sizing:border-box; }
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html { width:100%; overflow-x:hidden; touch-action:pan-y; }
+body { width:100%; overflow-x:hidden; }
+button, input, textarea, select { touch-action:manipulation; }
 body {
   margin:0;
   background:var(--light);
@@ -127,6 +130,33 @@ button.danger { background:#8e3030; }
   border-radius:8px;
   border:1px solid var(--border);
 }
+#loadingOverlay {
+  position:fixed; inset:0; z-index:9999; display:none;
+  align-items:center; justify-content:center; flex-direction:column;
+  gap:14px; padding:24px; background:rgba(10,25,45,.48);
+  backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
+}
+#loadingOverlay.show { display:flex; }
+.loadingBox {
+  width:min(280px, 88vw); background:#fff; color:var(--navy);
+  border-radius:16px; padding:24px 18px; text-align:center;
+  box-shadow:0 14px 40px #0003; font-weight:700;
+}
+.spinner {
+  width:44px; height:44px; border:4px solid #dce7f2;
+  border-top-color:var(--blue); border-radius:50%;
+  animation:spin .8s linear infinite; margin:0 auto 14px;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+#alreadyDoneCard { border:1px solid #a7dfbd; background:#f0fff5; }
+#alreadyDoneCard h2 { color:#126436; }
+@media(max-width:380px) {
+  header { padding:18px 12px; }
+  header h1 { font-size:21px; }
+  .container { margin:12px auto; padding:0 10px 24px; }
+  .card { padding:14px; border-radius:10px; }
+  button { padding:12px 10px; }
+}
 footer { text-align:center; color:#667487; font-size:12px; padding:14px; }
 @media(min-width:560px) {
   .detail { grid-template-columns:1fr 1fr; }
@@ -145,6 +175,15 @@ footer { text-align:center; color:#667487; font-size:12px; padding:14px; }
   <div id="message" class="status" role="status" aria-live="polite">
     कृपया मोबाईल नंबर आणि Application ID भरा.
   </div>
+
+  <section class="card step-card hidden" id="alreadyDoneCard">
+    <h2>पडताळणी पूर्ण झाली</h2>
+    <div class="status ok" style="font-size:16px;font-weight:700">
+      Your verification is already done.
+    </div>
+    <p>तुमची पडताळणी यापूर्वीच पूर्ण झाली आहे. पुन्हा पडताळणी करण्याची गरज नाही. काही मदत हवी असल्यास कार्यालयाशी संपर्क साधा.</p>
+    <button class="full secondary" onclick="resetSearch()">मुख्य पेजवर परत जा</button>
+  </section>
 
   <section class="card step-card" id="searchCard">
     <h2>1. अर्ज शोधा</h2>
@@ -238,6 +277,13 @@ footer { text-align:center; color:#667487; font-size:12px; padding:14px; }
   <footer>महिला ग्रुप 2026 · ऑनलाइन पडताळणी</footer>
 </main>
 
+<div id="loadingOverlay" aria-live="polite" aria-label="लोड होत आहे">
+  <div class="loadingBox">
+    <div class="spinner" aria-hidden="true"></div>
+    <div id="loadingText">कृपया थांबा...</div>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -246,7 +292,7 @@ footer { text-align:center; color:#667487; font-size:12px; padding:14px; }
  * हा URL deploy केलेल्या योग्य आवृत्तीचा असावा.
  */
 const API_URL =
-'https://script.google.com/macros/s/AKfycbxLVFgbVzZik_DuB5Pyspj6qotUTvdfxeNCaWcTae9gO2oS3DhgBb0vfVpPVbd-uBuA/exec';
+'https://script.google.com/macros/s/AKfycbyv5CvUA5mX4kDtCw2pyJykA--8Lo3ew5CbJL0wKl_KVSIEms8WN6PfjRB1yt56FHw/exec';
 
 let verificationId = '';
 let verificationNumber = '';
@@ -266,13 +312,35 @@ function showMessage(message, type='') {
 
 function setBusy(buttonId, busy, label) {
   const b = $(buttonId);
-  b.disabled = busy;
-  if (busy) {
-    b.dataset.oldLabel = b.textContent;
-    b.textContent = label || 'कृपया थांबा...';
-  } else {
-    b.textContent = b.dataset.oldLabel || b.textContent;
+  if (b) {
+    b.disabled = busy;
+    if (busy) {
+      b.dataset.oldLabel = b.textContent;
+      b.textContent = label || 'कृपया थांबा...';
+    } else {
+      b.textContent = b.dataset.oldLabel || b.textContent;
+    }
   }
+  const overlay = $('loadingOverlay');
+  if (overlay) {
+    if (busy) {
+      $('loadingText').textContent = label || 'कृपया थांबा...';
+      overlay.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    } else {
+      overlay.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+  }
+}
+
+function resetSearch() {
+  document.querySelectorAll('.step-card').forEach(card => card.classList.add('hidden'));
+  $('searchCard').classList.remove('hidden');
+  $('mobile').value = '';
+  $('applicationId').value = '';
+  showMessage('कृपया मोबाईल नंबर आणि Application ID भरा.');
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
 function showSection(id) {
@@ -280,7 +348,7 @@ function showSection(id) {
     card.classList.add('hidden');
   });
   $(id).classList.remove('hidden');
-  window.scrollTo({top: 0, behavior: 'smooth'});
+  window.scrollTo({top: 0, behavior: 'auto'});
   if (id === 'signatureCard') {
     // Canvas hidden असताना त्याची रुंदी शून्य होऊ नये.
     resizeCanvas();
@@ -386,6 +454,12 @@ async function searchApplication() {
 
     if (!result.success) throw new Error(result.message || 'अर्ज सापडला नाही.');
 
+    if (result.alreadyDone === true) {
+      showSection('alreadyDoneCard');
+      showMessage('Your verification is already done. तुमची पडताळणी आधीच पूर्ण झाली आहे.', 'ok');
+      return;
+    }
+
     verificationId = safeText(result.verificationId);
     verificationNumber = safeText(result.verificationNumber);
 
@@ -486,7 +560,7 @@ async function uploadSelfie() {
     selfieSaved = true;
     showSection('agreementCard');
     showMessage('सेल्फी सेव्ह झाला.', 'ok');
-    $('agreementCard').scrollIntoView({behavior:'smooth'});
+    window.scrollTo({top:0, behavior:'auto'});
   } catch (e) {
     showMessage('सेल्फी सेव्ह करताना त्रुटी: ' + e.message, 'error');
   } finally {
@@ -514,7 +588,7 @@ async function acceptAgreement() {
     agreementSaved = true;
     showSection('bankCard');
     showMessage('करारपत्राची संमती नोंदवली.', 'ok');
-    $('bankCard').scrollIntoView({behavior:'smooth'});
+    window.scrollTo({top:0, behavior:'auto'});
   } catch (e) {
     showMessage('संमती सेव्ह करताना त्रुटी: ' + e.message, 'error');
   } finally {
@@ -549,7 +623,7 @@ async function saveBank() {
     bankSaved = true;
     showSection('signatureCard');
     showMessage('बँक तपशील सेव्ह झाले.', 'ok');
-    $('signatureCard').scrollIntoView({behavior:'smooth'});
+    window.scrollTo({top:0, behavior:'auto'});
   } catch (e) {
     showMessage('बँक तपशील सेव्ह करताना त्रुटी: ' + e.message, 'error');
   } finally {
@@ -568,81 +642,4 @@ function resizeCanvas() {
   const ratio = Math.max(window.devicePixelRatio || 1, 1);
   const old = hasSignature ? canvas.toDataURL() : null;
   canvas.width = rect.width * ratio;
-  canvas.height = rect.height * ratio;
-  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-  ctx.lineWidth = 2.5;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = '#102d50';
-  if (old) {
-    const img = new Image();
-    img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
-    img.src = old;
-  }
-}
-function pointerPosition(e) {
-  const r = canvas.getBoundingClientRect();
-  return {x:e.clientX-r.left, y:e.clientY-r.top};
-}
-canvas.addEventListener('pointerdown', e => {
-  drawing = true;
-  hasSignature = true;
-  canvas.setPointerCapture(e.pointerId);
-  const p = pointerPosition(e);
-  ctx.beginPath();
-  ctx.moveTo(p.x,p.y);
-});
-canvas.addEventListener('pointermove', e => {
-  if (!drawing) return;
-  const p = pointerPosition(e);
-  ctx.lineTo(p.x,p.y);
-  ctx.stroke();
-});
-function stopDrawing() { drawing = false; }
-canvas.addEventListener('pointerup', stopDrawing);
-canvas.addEventListener('pointercancel', stopDrawing);
-canvas.addEventListener('pointerleave', stopDrawing);
-
-window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
-
-function clearSignature() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  hasSignature = false;
-}
-
-async function saveSignature() {
-  if (!bankSaved) return showMessage('प्रथम बँक तपशील सेव्ह करा.', 'error');
-  if (!hasSignature) return showMessage('प्रथम सही करा.', 'error');
-
-  setBusy('signatureBtn', true, 'सही सेव्ह होत आहे...');
-  try {
-    const imageData = canvas.toDataURL('image/png');
-    const result = await postAPI({
-      action:'saveSignature', verificationId, imageData
-    });
-    if (!result.success) throw new Error(result.message || 'सही सेव्ह झाली नाही.');
-
-    signatureSaved = true;
-    $('finalNumber').textContent = verificationNumber;
-    showSection('finishCard');
-    showMessage('सही सेव्ह झाली. Verification Number जतन करा.', 'ok');
-    $('finishCard').scrollIntoView({behavior:'smooth'});
-  } catch (e) {
-    showMessage('सही सेव्ह करताना त्रुटी: ' + e.message, 'error');
-  } finally {
-    setBusy('signatureBtn', false);
-  }
-}
-
-async function copyNumber() {
-  try {
-    await navigator.clipboard.writeText(verificationNumber);
-    showMessage('Verification Number कॉपी झाला.', 'ok');
-  } catch (e) {
-    showMessage('तुमचा Verification Number: ' + verificationNumber, 'ok');
-  }
-}
-</script>
-</body>
-</html>
+  canvas.height = rect.
